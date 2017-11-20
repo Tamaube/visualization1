@@ -93,6 +93,23 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         return volume.getVoxel(x, y, z);
     }
+    
+    double linearInterpolation(double v0, double v1, double x, double x0, double x1) {
+        return (1 - (x-x0)/(x1-x0)) * v0 + (x-x0)/(x1-x0) * v1;
+    }
+    
+    double tripleLinearInterpolation(double[] q0, double[] q1, double [] pixel) {
+        //TODO compute the corner
+        double c000, c001, c010, c011, c100, c101, c110, c111;
+        double c00 = linearInterpolation(c000, c100, pixel[0], q0[0], q1[0]);
+        double c01 = linearInterpolation(c001, c101, pixel[0], q0[0], q1[0]);
+        double c10 = linearInterpolation(c010, c110, pixel[0], q0[0], q1[0]);
+        double c11 = linearInterpolation(c011, c111, pixel[0], q0[0], q1[0]);
+        double c0 = linearInterpolation(c00, c10, q[1], q0[1], q1[1]);
+        double c1 = linearInterpolation(c01, c11, q[1], q0[1], q1[1]);
+        double c = linearInterpolation(c0, c1, q[2], q0[2], q1[2]);
+        return c;
+    }
 
 
     void slicer(double[] viewMatrix) {
@@ -134,6 +151,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                         + volumeCenter[2];
 
+                //compute the interpolation
+                //find the maximum ?
+                
                 int val = getVoxel(pixelCoord);
                 
                 // Map the intensity to a grey value by linear scaling
