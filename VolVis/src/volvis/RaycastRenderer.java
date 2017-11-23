@@ -133,6 +133,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return  c;
     }
 
+    boolean coordinatesInBox(double x, double y, double z) {
+       if (x>volume.getDimX() || y>volume.getDimY() || z>volume.getDimZ()) {
+           return false;
+       } 
+       return true;
+    }
+    
     void MIP(double[] viewMatrix) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
@@ -175,13 +182,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 //find the maximum ?
                 int val=0;
                 //TODO: how much do we need to loop?
-                for (int k = 0; k<5; k++) {
+                int k=0;
+                while(coordinatesInBox(pixelCoord[0],pixelCoord[1],pixelCoord[2])){
                     pixelCoord[0] += k*viewVec[0];
                     pixelCoord[1] += k*viewVec[1];
                     pixelCoord[2] += k*viewVec[2];
                     
                     val = Math.max(val, (int)tripleLinearInterpolation(pixelCoord));
-                } 
+                    k++;
+                }
                 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val/max;
