@@ -98,19 +98,110 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return (1 - (x-x0)/(x1-x0)) * v0 + (x-x0)/(x1-x0) * v1;
     }
     
-    double tripleLinearInterpolation(double[] q0, double[] q1, double [] pixel) {
-        //TODO compute the corner
-        double c000, c001, c010, c011, c100, c101, c110, c111;
-        double c00 = linearInterpolation(c000, c100, pixel[0], q0[0], q1[0]);
-        double c01 = linearInterpolation(c001, c101, pixel[0], q0[0], q1[0]);
-        double c10 = linearInterpolation(c010, c110, pixel[0], q0[0], q1[0]);
-        double c11 = linearInterpolation(c011, c111, pixel[0], q0[0], q1[0]);
-        double c0 = linearInterpolation(c00, c10, q[1], q0[1], q1[1]);
-        double c1 = linearInterpolation(c01, c11, q[1], q0[1], q1[1]);
-        double c = linearInterpolation(c0, c1, q[2], q0[2], q1[2]);
-        return c;
+    double tripleLinearInterpolation(double [] pixel) {
+        //get the two points
+        int x0 = (int) Math.floor(pixel[0]);
+        int y0 = (int) Math.floor(pixel[1]);
+        int z0 = (int) Math.floor(pixel[2]);
+        int x1 = (int) Math.ceil(pixel[0]);
+        int y1 = (int) Math.ceil(pixel[1]);
+        int z1 = (int) Math.ceil(pixel[2]);        
+        
+        //compute the corners
+        double c000 = volume.getVoxel(x0, y0, z0);
+        double c001 = volume.getVoxel(x0, y0, z1);
+        double c010 = volume.getVoxel(x0, y1, z0);
+        double c011 = volume.getVoxel(x0, y1, z1);
+        double c100 = volume.getVoxel(x1, y0, z0);
+        double c101 = volume.getVoxel(x1, y0, z1);
+        double c110 = volume.getVoxel(x1, y1, z0);
+        double c111 = volume.getVoxel(x1, y1, z1);
+        
+        //interpolate along x
+        double c00 = linearInterpolation(c000, c100, pixel[0], x0, x1);
+        double c01 = linearInterpolation(c001, c101, pixel[0], x0, x1);
+        double c10 = linearInterpolation(c010, c110, pixel[0], x0, x1);
+        double c11 = linearInterpolation(c011, c111, pixel[0], x0, x1);
+        
+        //interpolate along y
+        double c0 = linearInterpolation(c00, c10, pixel[1], y0, y1);
+        double c1 = linearInterpolation(c01, c11, pixel[1], y0, y1);
+        
+        //interpolate along z
+        double c = linearInterpolation(c0, c1, pixel[2], z0, z1);
+        
+        return  c;
     }
 
+    void MIP(double[] viewMatrix) {
+        // clear image
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+                image.setRGB(i, j, 0);
+            }
+        }
+
+        // vector uVec and vVec define a plane through the origin, 
+        // perpendicular to the view vector viewVec
+        double[] viewVec = new double[3];
+        double[] uVec = new double[3];
+        double[] vVec = new double[3];
+        VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
+        VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
+        VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
+
+        // image is square
+        int imageCenter = image.getWidth() / 2;
+
+        double[] pixelCoord = new double[3];
+        double[] volumeCenter = new double[3];
+        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
+
+        // sample on a plane through the origin of the volume data
+        double max = volume.getMaximum();
+        TFColor voxelColor = new TFColor();
+
+        
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+                pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                        + volumeCenter[0];
+                pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                        + volumeCenter[1];
+                pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                        + volumeCenter[2];
+
+                //compute the interpolation
+                //find the maximum ?
+                int val=0;
+                //TODO: how much do we need to loop?
+                for (int k = 0; k<5; k++) {
+                    pixelCoord[0] += k*viewVec[0];
+                    pixelCoord[1] += k*viewVec[1];
+                    pixelCoord[2] += k*viewVec[2];
+                    
+                    val = Math.max(val, (int)tripleLinearInterpolation(pixelCoord));
+                } 
+                
+                // Map the intensity to a grey value by linear scaling
+                voxelColor.r = val/max;
+                voxelColor.g = voxelColor.r;
+                voxelColor.b = voxelColor.r;
+                voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
+                // Alternatively, apply the transfer function to obtain a color
+                // voxelColor = tFunc.getColor(val);
+                
+                
+                // BufferedImage expects a pixel color packed as ARGB in an int
+                int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
+                int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
+                int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
+                int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
+                int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
+                image.setRGB(i, j, pixelColor);
+            }
+        }
+    }
 
     void slicer(double[] viewMatrix) {
 
@@ -250,7 +341,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, viewMatrix, 0);
 
         long startTime = System.currentTimeMillis();
-        slicer(viewMatrix);    
+        ///slicer(viewMatrix);  
+        MIP(viewMatrix);  
         
         long endTime = System.currentTimeMillis();
         double runningTime = (endTime - startTime);
