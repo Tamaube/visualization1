@@ -132,6 +132,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         return  c;
     }
+    
+     boolean checkPixelInVolume(int x, int y, int z) {
+        return (x >= 0 && x<= volume.getDimX() 
+                && y>=0 && y <= volume.getDimY()
+                && z>=0 && z<=volume.getDimZ());
+    }
 
     void MIP(double[] viewMatrix) {
         // clear image
@@ -175,12 +181,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 //find the maximum ?
                 int val=0;
                 //TODO: how much do we need to loop?
-                for (int k = 0; k<5; k++) {
+                int k = 0;
+                while(checkPixelInVolume(k*viewVec[0], k*viewVec[1], k*viewVec[2]))
                     pixelCoord[0] += k*viewVec[0];
                     pixelCoord[1] += k*viewVec[1];
                     pixelCoord[2] += k*viewVec[2];
                     
                     val = Math.max(val, (int)tripleLinearInterpolation(pixelCoord));
+                    k++;
                 } 
                 
                 // Map the intensity to a grey value by linear scaling
