@@ -133,12 +133,20 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return  c;
     }
     
+    //TODO choose one
      boolean checkPixelInVolume(int x, int y, int z) {
         return (x >= 0 && x<= volume.getDimX() 
                 && y>=0 && y <= volume.getDimY()
                 && z>=0 && z<=volume.getDimZ());
     }
 
+    boolean coordinatesInBox(double x, double y, double z) {
+       if (x>volume.getDimX() || y>volume.getDimY() || z>volume.getDimZ()) {
+           return false;
+       } 
+       return true;
+    }
+    
     void MIP(double[] viewMatrix) {
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
@@ -189,7 +197,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     
                     val = Math.max(val, (int)tripleLinearInterpolation(pixelCoord));
                     k++;
-                } 
+                }
                 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val/max;
