@@ -79,59 +79,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return tfEditor;
     }
      
-     double linearInterpolation(double v0, double v1, double x, double x0, double x1) {
-        return (1 - (x-x0)/(x1-x0)) * v0 + (x-x0)/(x1-x0) * v1;
-    }
-    
-    double tripleLinearInterpolation(double [] pixel) {
-        //get the two points
-        int x0 = (int) Math.floor(pixel[0]);
-        int y0 = (int) Math.floor(pixel[1]);
-        int z0 = (int) Math.floor(pixel[2]);
-        int x1 = (int) Math.ceil(pixel[0]);
-        int y1 = (int) Math.ceil(pixel[1]);
-        int z1 = (int) Math.ceil(pixel[2]);        
-        
-        //compute the corners
-        double c000 = volume.getVoxel(x0, y0, z0);
-        double c001 = volume.getVoxel(x0, y0, z1);
-        double c010 = volume.getVoxel(x0, y1, z0);
-        double c011 = volume.getVoxel(x0, y1, z1);
-        double c100 = volume.getVoxel(x1, y0, z0);
-        double c101 = volume.getVoxel(x1, y0, z1);
-        double c110 = volume.getVoxel(x1, y1, z0);
-        double c111 = volume.getVoxel(x1, y1, z1);
-        
-        //interpolate along x
-        double c00 = linearInterpolation(c000, c100, pixel[0], x0, x1);
-        double c01 = linearInterpolation(c001, c101, pixel[0], x0, x1);
-        double c10 = linearInterpolation(c010, c110, pixel[0], x0, x1);
-        double c11 = linearInterpolation(c011, c111, pixel[0], x0, x1);
-        
-        //interpolate along y
-        double c0 = linearInterpolation(c00, c10, pixel[1], y0, y1);
-        double c1 = linearInterpolation(c01, c11, pixel[1], y0, y1);
-        
-        //interpolate along z
-        double c = linearInterpolation(c0, c1, pixel[2], z0, z1);
-        
-        return  c;
-    }
-    
-    //TODO choose one
-     boolean checkPixelInVolume(double x, double y, double z) {
-        return ( x< volume.getDimX() 
-                && y < volume.getDimY()
-                && z<volume.getDimZ());
-    }
-
-    boolean coordinatesInBox(double x, double y, double z) {
-       if (x>volume.getDimX() || y>volume.getDimY() || z>volume.getDimZ()) {
-           return false;
-       } 
-       return true;
-    }
-
     short getVoxel(double[] coord) {
 
         if (coord[0] < 0 || coord[0] > volume.getDimX() || coord[1] < 0 || coord[1] > volume.getDimY()
@@ -210,6 +157,67 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     }
     
+    //method for computed the coordinates of the pixel
+    double[] calculatePixelCoordinates (double[] uVec, double[] vVec, double[] viewVec, double[] volumeCenter, int imageCenter, int i, int j, int k) {
+        double[]  pixelCoord = new double[3];
+        
+        pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                        + volumeCenter[0] + k*viewVec[0];
+        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                        + volumeCenter[1] + k*viewVec[1];
+        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                        + volumeCenter[2] + k*viewVec[2];
+        
+        return pixelCoord;
+    }
+    
+    double linearInterpolation(double v0, double v1, double x, double x0, double x1) {
+        return (1 - (x-x0)/(x1-x0)) * v0 + (x-x0)/(x1-x0) * v1;
+    }
+    
+    double tripleLinearInterpolation(double [] pixel) {
+        //get the two points
+        int x0 = (int) Math.floor(pixel[0]);
+        int y0 = (int) Math.floor(pixel[1]);
+        int z0 = (int) Math.floor(pixel[2]);
+        int x1 = (int) Math.ceil(pixel[0]);
+        int y1 = (int) Math.ceil(pixel[1]);
+        int z1 = (int) Math.ceil(pixel[2]);        
+        
+        //compute the corners
+        double c000 = volume.getVoxel(x0, y0, z0);
+        double c001 = volume.getVoxel(x0, y0, z1);
+        double c010 = volume.getVoxel(x0, y1, z0);
+        double c011 = volume.getVoxel(x0, y1, z1);
+        double c100 = volume.getVoxel(x1, y0, z0);
+        double c101 = volume.getVoxel(x1, y0, z1);
+        double c110 = volume.getVoxel(x1, y1, z0);
+        double c111 = volume.getVoxel(x1, y1, z1);
+        
+        //interpolate along x
+        double c00 = linearInterpolation(c000, c100, pixel[0], x0, x1);
+        double c01 = linearInterpolation(c001, c101, pixel[0], x0, x1);
+        double c10 = linearInterpolation(c010, c110, pixel[0], x0, x1);
+        double c11 = linearInterpolation(c011, c111, pixel[0], x0, x1);
+        
+        //interpolate along y
+        double c0 = linearInterpolation(c00, c10, pixel[1], y0, y1);
+        double c1 = linearInterpolation(c01, c11, pixel[1], y0, y1);
+        
+        //interpolate along z
+        double c = linearInterpolation(c0, c1, pixel[2], z0, z1);
+        
+        return  c;
+    }
+    
+    //method for checking if the coordinates of the pixel are within the volume's dimensions
+     boolean checkPixelInVolume(double x, double y, double z) {
+        return ( x-1>=0 && x+1<=volume.getDimX() 
+                && y-1>=0 && y+1<=volume.getDimY()
+                && z-1>=0 && z+1<=volume.getDimZ());
+    }
+
+    
     void MIP(double[] viewMatrix) {
 
         // clear image
@@ -231,7 +239,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // image is square
         int imageCenter = image.getWidth() / 2;
 
-        double[] pixelCoord = new double[3];
+        double[] pixelCoord;
         double[] volumeCenter = new double[3];
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
 
@@ -242,27 +250,20 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
-                pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
-                        + volumeCenter[0];
-                pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
-                        + volumeCenter[1];
-                pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
-                        + volumeCenter[2];
                 
-                //compute the interpolation
-                //find the maximum ?
                 int val=0;
-                //TODO: how much do we need to loop?
+                //use index k to go along the ray
                 int k = 0;
                 
-                while(checkPixelInVolume(k*viewVec[0], k*viewVec[1], k*viewVec[1])) {
-                    pixelCoord[0] +=  k*viewVec[0];
-                    pixelCoord[1] +=  k*viewVec[1];
-                    pixelCoord[2] +=  k*viewVec[2];
-                    val = Math.max(val, (int)tripleLinearInterpolation(pixelCoord) );
-                    System.out.println("volvis.RaycastRenderer.MIP() val=" + val + " x=" + pixelCoord[0]
-                        + " y=" + pixelCoord[1] + " z=" + pixelCoord[2]);
-                    k++;
+                pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
+                
+                while(checkPixelInVolume(pixelCoord[0],pixelCoord[1],pixelCoord[2])) {
+                    val = Math.max(val, (short)tripleLinearInterpolation(pixelCoord));
+                    //System.out.println("volvis.RaycastRenderer.MIP() val=" + val + " x=" + pixelCoord[0]
+                    //    + " y=" + pixelCoord[1] + " z=" + pixelCoord[2] + " interp=" + xx);
+                    
+                    k += 100;
+                    pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
                 }
                 
                 
