@@ -22,7 +22,7 @@ import volume.Volume;
  * @author michel
  */
 public class RaycastRenderer extends Renderer implements TFChangeListener {
-
+    
     private Volume volume = null;
     private GradientVolume gradients = null;
     private int currentMode;
@@ -200,7 +200,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int z0 = (int) Math.floor(pixel[2]);
         int x1 = (int) Math.ceil(pixel[0]);
         int y1 = (int) Math.ceil(pixel[1]);
-        int z1 = (int) Math.ceil(pixel[2]);        
+        int z1 = (int) Math.ceil(pixel[2]);    
+        
+        //check that the two points are inside the volume dimensions as well
+        if(!checkPixelInVolume(x0,y0,z0) || !checkPixelInVolume(x1,y1,z1)) {
+            return 0;
+        }
         
         //compute the corners
         double c000 = volume.getVoxel(x0, y0, z0);
@@ -230,9 +235,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
     //method for checking if the coordinates of the pixel are within the volume's dimensions
      boolean checkPixelInVolume(double x, double y, double z) {
-        return ( x-1>=0 && x+1<=volume.getDimX() 
-                && y-1>=0 && y+1<=volume.getDimY()
-                && z-1>=0 && z+1<=volume.getDimZ());
+        return ( x>=0 && x<volume.getDimX() 
+                && y>=0 && y<volume.getDimY()
+                && z>=0 && z<volume.getDimZ());
     }
 
     
@@ -277,13 +282,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 
                 while(checkPixelInVolume(pixelCoord[0],pixelCoord[1],pixelCoord[2])) {
                     val = Math.max(val, (short)tripleLinearInterpolation(pixelCoord));
-                    //System.out.println("volvis.RaycastRenderer.MIP() val=" + val + " x=" + pixelCoord[0]
-                    //    + " y=" + pixelCoord[1] + " z=" + pixelCoord[2] + " interp=" + xx);
-                    
-                    k += 5;
+                    //increase with 5 instead of 1 to render faster
+                    k += 1;
                     pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
                 }
-                
                 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val/max;
@@ -305,13 +307,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
     }
     
-    public double combineAlpha(double a1, double a2){
-        assert a1 >= 0 && a1 <= 1;
-        assert a2 >= 0 && a2 <= 1;
-
-        return 1d - ((1d - a1) * (1d - a2));
-    }
-    
      //apply the new color as an overlay to old color. 
     //This means that the new color is "painted over"
     public TFColor applyNewColor(TFColor oldColor, TFColor newColor){
@@ -319,7 +314,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         c.r = oldColor.r * (1 - newColor.a) + newColor.r * newColor.a;
         c.g = oldColor.g * (1 - newColor.a) + newColor.g * newColor.a;
         c.b = oldColor.b * (1 - newColor.a) + newColor.b * newColor.a;
-        //c.a = combineAlpha(oldColor.a, newColor.a);
+        //c.a = newColor.a; ???
         
         return c;
     }
@@ -350,13 +345,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
 
         // sample on a plane through the origin of the volume data
-        double max = volume.getMaximum();
-        TFColor voxelColor = new TFColor();
-        TFColor newColor = new TFColor();
-
+        //double max = volume.getMaximum();
         
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
+                TFColor voxelColor = new TFColor(0,0,0,1);
                 
                 int val=0;
                 //use index k to go along the ray
@@ -366,37 +359,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 
                 while(checkPixelInVolume(pixelCoord[0],pixelCoord[1],pixelCoord[2])) {
                     val = (short)tripleLinearInterpolation(pixelCoord);
-                    newColor = tFunc.getColor(val);
+                    TFColor newColor = tFunc.getColor(val);
                     voxelColor = applyNewColor(voxelColor, newColor);
                     
-                    k += 5;
+                    k += 1;
                     pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
-                
-                    int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
-                    int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
-                    int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
-                    int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
-                    int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
-                    image.setRGB(i, j, pixelColor);
                 }
                 
                 
-                // Map the intensity to a grey value by linear scaling
-                //voxelColor.r = val/max;
-                //voxelColor.g = voxelColor.r;
-                //voxelColor.b = voxelColor.r;
-                //voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
-                // Alternatively, apply the transfer function to obtain a color
-                //voxelColor = tFunc.getColor(val);
-                
-                
                 // BufferedImage expects a pixel color packed as ARGB in an int
-                /*int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
+                int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
                 int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
                 int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
                 int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
                 int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
-                image.setRGB(i, j, pixelColor);*/
+                image.setRGB(i, j, pixelColor);
             }
         }
     }
@@ -462,7 +439,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     @Override
     public void visualize(GL2 gl) {
-
 
         if (volume == null) {
             return;

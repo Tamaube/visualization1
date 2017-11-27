@@ -4,6 +4,7 @@
  */
 package gui;
 
+import com.jogamp.opengl.GL2;
 import javax.swing.JOptionPane;
 import volvis.RaycastRenderer;
 
