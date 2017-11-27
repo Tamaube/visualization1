@@ -25,15 +25,33 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     private Volume volume = null;
     private GradientVolume gradients = null;
+    private int currentMode;
     RaycastRendererPanel panel;
     TransferFunction tFunc;
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
     
+    public static final int MODE_SLICER = 0;
+    public static final int MODE_MIP = 1;
+    public static final int MODE_COMPOSITING = 2;
+    
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
         panel.setSpeedLabel("0");
+        this.currentMode = MODE_SLICER;
     }
+
+    public int getCurrentMode() {
+        return currentMode;
+    }
+
+    public void setCurrentMode(int currentMode) {
+        if(currentMode == MODE_SLICER || currentMode == MODE_MIP || currentMode == MODE_COMPOSITING) {
+            this.currentMode = currentMode;
+        }
+    }
+    
+    
 
     public void setVolume(Volume vol) {
         System.out.println("Assigning volume");
@@ -455,9 +473,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, viewMatrix, 0);
 
         long startTime = System.currentTimeMillis();
-        //slicer(viewMatrix);    
-        //MIP(viewMatrix);
-        composing(viewMatrix);
+        if(this.currentMode == MODE_SLICER) {
+            slicer(viewMatrix);    
+        } else if(this.currentMode == MODE_MIP) {
+            MIP(viewMatrix);
+        } else {
+            composing(viewMatrix);
+        }
         
         long endTime = System.currentTimeMillis();
         double runningTime = (endTime - startTime);
