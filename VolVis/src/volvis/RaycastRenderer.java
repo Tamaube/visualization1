@@ -289,13 +289,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
     }
     
-    public double combineAlpha(double a1, double a2){
-        assert a1 >= 0 && a1 <= 1;
-        assert a2 >= 0 && a2 <= 1;
-
-        return 1d - ((1d - a1) * (1d - a2));
-    }
-    
      //apply the new color as an overlay to old color. 
     //This means that the new color is "painted over"
     public TFColor applyNewColor(TFColor oldColor, TFColor newColor){
@@ -303,7 +296,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         c.r = oldColor.r * (1 - newColor.a) + newColor.r * newColor.a;
         c.g = oldColor.g * (1 - newColor.a) + newColor.g * newColor.a;
         c.b = oldColor.b * (1 - newColor.a) + newColor.b * newColor.a;
-        //c.a = combineAlpha(oldColor.a, newColor.a);
+        //c.a = newColor.a; ???
         
         return c;
     }
