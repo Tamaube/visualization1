@@ -2,4 +2,6 @@
 **/nbproject/
 VolVis/build/
 VolVis/nbproject/
-/VolVis/dist/
+**/VolVis/dist/
+**/VolVis/build/
+**/VolVis/nbproject/
