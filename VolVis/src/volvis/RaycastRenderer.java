@@ -30,6 +30,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TransferFunction tFunc;
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
+    private boolean responsive;
     
     public static final int MODE_SLICER = 0;
     public static final int MODE_MIP = 1;
@@ -39,8 +40,18 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         panel = new RaycastRendererPanel(this);
         panel.setSpeedLabel("0");
         this.currentMode = MODE_SLICER;
+        responsive = false;
     }
 
+    public boolean isResponsive() {
+        return responsive;
+    }
+
+    public void setResponsive(boolean responsive) {
+        this.responsive = responsive;
+    }
+
+    
     public int getCurrentMode() {
         return currentMode;
     }
@@ -277,13 +288,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int val=0;
                 //use index k to go along the ray
                 int k = 0;
-                
+                int step = 1;
+                if(this.responsive) {step = 10;}
                 pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
                 
                 while(checkPixelInVolume(pixelCoord[0],pixelCoord[1],pixelCoord[2])) {
                     val = Math.max(val, (short)tripleLinearInterpolation(pixelCoord));
-                    //increase with 5 instead of 1 to render faster
-                    k += 1;
+                    //increase with 10 instead of 1 to render faster
+                    k += step;
                     pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
                 }
                 
@@ -319,7 +331,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return c;
     }
 
-    void composing(double[] viewMatrix) {
+    void compositing(double[] viewMatrix) {
 
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
@@ -354,6 +366,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 int val=0;
                 //use index k to go along the ray
                 int k = 0;
+                int step = 1;
+                if(this.responsive) {step = 10;}
                 
                 pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
                 
@@ -362,7 +376,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     TFColor newColor = tFunc.getColor(val);
                     voxelColor = applyNewColor(voxelColor, newColor);
                     
-                    k += 1;
+                    k += step;
                     pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
                 }
                 
@@ -454,7 +468,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         } else if(this.currentMode == MODE_MIP) {
             MIP(viewMatrix);
         } else {
-            composing(viewMatrix);
+            compositing(viewMatrix);
         }
         
         long endTime = System.currentTimeMillis();
