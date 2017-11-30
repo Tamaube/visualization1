@@ -68,10 +68,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
 
     public void setVolume(Volume vol) {
-        System.out.println("Assigning volume");
+        //System.out.println("Assigning volume");
         volume = vol;
 
-        System.out.println("Computing gradients");
+        //System.out.println("Computing gradients");
         gradients = new GradientVolume(vol);
 
         // set up image for storing the resulting rendering

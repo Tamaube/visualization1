@@ -53,11 +53,11 @@ public class GradientVolume {
         for(int x = 0; x < dimX; x++) {
             for(int y = 0; y < dimY; y++) {
                 for(int z=0; z < dimZ; z++) {
-                    //apply levoy's relation (p.3&)
-                    float gradientX = 1/2 * (this.volume.getVoxel(x+1, y, z) - this.volume.getVoxel(x-1, y, z));
-                    float gradientY = 1/2 * (this.volume.getVoxel(x, y+1, z) - this.volume.getVoxel(x, y-1, z));
-                    float gradientZ = 1/2 * (this.volume.getVoxel(x, y, z+1) - this.volume.getVoxel(x, y, z-1));
-                    this.setGradient(x, y, z, new VoxelGradient(gradientX, gradientY, gradientZ));
+                    //apply levoy's relation (p.31)
+                    double gradientX = 0.5 * (this.volume.getVoxel(x+1, y, z) - this.volume.getVoxel(x-1, y, z));
+                    double gradientY = 0.5 * (this.volume.getVoxel(x, y+1, z) - this.volume.getVoxel(x, y-1, z));
+                    double gradientZ = 0.5 * (this.volume.getVoxel(x, y, z+1) - this.volume.getVoxel(x, y, z-1));
+                    this.setGradient(x, y, z, new VoxelGradient((float)gradientX, (float)gradientY, (float)gradientZ));
                 }
             }
         }
