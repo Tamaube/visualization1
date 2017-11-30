@@ -37,7 +37,12 @@ public class Volume {
     
     
     public short getVoxel(int x, int y, int z) {
-        return data[x + dimX*(y + dimY * z)];
+        if( x>=0 && x<this.dimX
+                && y>=0 && y< this.dimY
+                && z>=0 && z<this.dimZ) {
+                 return data[x + dimX*(y + dimY * z)];
+        } 
+        return 0;
     }
     
     public void setVoxel(int x, int y, int z, short value) {
