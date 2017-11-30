@@ -38,11 +38,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     public static final int MODE_COMPOSITING = 2;
     public static final int MODE_2DTRANSFER = 3;
     
+    private boolean shading = false;
+    
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
         panel.setSpeedLabel("0");
         this.currentMode = MODE_SLICER;
         responsive = false;
+    }
+
+    public boolean isShading() {
+        return shading;
+    }
+
+    public void setShading(boolean shading) {
+        this.shading = shading;
     }
 
     public boolean isResponsive() {
@@ -393,6 +403,52 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
         }
     }
+    
+    //presentation week 3, slide 10
+    TFColor applyShading(VoxelGradient voxelGradient, TFColor tempColor , double[] viewVec){
+
+        TFColor c = tempColor; 
+        
+        double AMB_COEFFICIENT = 0.1;
+        double DIFF_COEFFICIENT = 0.7;
+        double SPEC_COEFFICIENT = 0.2;
+        double ALPHA = 10.0;
+        
+        double[] halfwayVec = new double[3];
+        double[] voxelGrad = {(double) voxelGradient.x, (double) voxelGradient.y, (double) voxelGradient.z};
+        VectorMath.normalize(voxelGrad);
+
+        VectorMath.setVector(halfwayVec, viewVec[0], viewVec[1], viewVec[2]);
+
+        VectorMath.scale(halfwayVec, 2);
+
+        VectorMath.scale(halfwayVec, 1 / VectorMath.length(halfwayVec));
+
+        double dotProduct1 = VectorMath.dotproduct(viewVec, voxelGrad);
+        double dotProduct2 = VectorMath.dotproduct(voxelGrad, halfwayVec);
+
+
+        //formula only applies when the dot products are positive
+        if (dotProduct1 >= 0.0 && dotProduct2 >= 0.0) {
+
+	    	/*applies the simplified Phong model to the current Voxel
+	    	 * the coefficients influence the outcome of the shading and can be varied
+	    	 */
+
+            TFColor surfaceColor = this.getTF2DPanel().triangleWidget.color;
+            //make vector
+            double[] surfColVec =  new double[]{surfaceColor.r,surfaceColor.g,surfaceColor.b};
+            
+            VectorMath.scale(surfColVec, AMB_COEFFICIENT + DIFF_COEFFICIENT * dotProduct1);
+            VectorMath.add(surfColVec, SPEC_COEFFICIENT * (Math.pow(dotProduct2, ALPHA)));
+
+            //write the obtained new color to the output
+            c.r = surfaceColor.r;
+            c.g = surfaceColor.g;
+            c.b = surfaceColor.b;
+        }
+        return c;
+    }
 
     void transfer2D(double[] viewMatrix) {
         this.clearImage();
@@ -435,6 +491,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     gradient = this.gradients.getGradient((int)pixelCoord[0],(int) pixelCoord[1],(int) pixelCoord[2]);
                    // TFColor newColor = tFunc.getColor(val);
                     tempColor.a = this.getTF2DPanel().triangleWidget.opacity(val, gradient.mag);
+                    
+                    //check if shading is selected
+                    if(shading) {
+                        tempColor = applyShading(gradient, tempColor, viewVec);
+                    }
+                    
+                    //apply color
                     voxelColor = applyNewColor(voxelColor, tempColor);
                     
                     k += step;

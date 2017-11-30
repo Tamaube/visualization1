@@ -164,7 +164,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_tf2dButtonActionPerformed
 
     private void shadingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_shadingCheckboxActionPerformed
-        JOptionPane.showMessageDialog(this, "Not implemented.");
+        this.renderer.setShading(this.shadingCheckbox.isSelected());
+        this.renderer.changed();
     }//GEN-LAST:event_shadingCheckboxActionPerformed
 
     private void responsiveCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_responsiveCheckboxActionPerformed
