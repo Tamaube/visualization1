@@ -49,6 +49,7 @@ public class GradientVolume {
         return dimZ;
     }
 
+    //compute gradients
     private void compute() {
         for(int x = 0; x < dimX; x++) {
             for(int y = 0; y < dimY; y++) {
@@ -60,8 +61,7 @@ public class GradientVolume {
                     this.setGradient(x, y, z, new VoxelGradient((float)gradientX, (float)gradientY, (float)gradientZ));
                 }
             }
-        }
-                
+        }            
     }
     
     public double getMaxGradientMagnitude() {

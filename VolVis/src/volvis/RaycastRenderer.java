@@ -78,10 +78,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
 
     public void setVolume(Volume vol) {
-        //System.out.println("Assigning volume");
+        System.out.println("Assigning volume");
         volume = vol;
 
-        //System.out.println("Computing gradients");
+        System.out.println("Computing gradients");
         gradients = new GradientVolume(vol);
 
         // set up image for storing the resulting rendering
@@ -339,14 +339,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      //apply the new color as an overlay to old color. 
     //This means that the new color is "painted over"
     public TFColor applyNewColor(TFColor oldColor, TFColor newColor){
-        TFColor c = new TFColor();
-        c.r = oldColor.r * (1 - newColor.a) + newColor.r * newColor.a;
-        c.g = oldColor.g * (1 - newColor.a) + newColor.g * newColor.a;
-        c.b = oldColor.b * (1 - newColor.a) + newColor.b * newColor.a;
-        //apply levoy's relation (p.32)
-        c.a = 1- ((1 - oldColor.a) * (1-newColor.a) );
+        TFColor result = new TFColor();
+        result.r = oldColor.r * (1 - newColor.a) + newColor.r * newColor.a;
+        result.g = oldColor.g * (1 - newColor.a) + newColor.g * newColor.a;
+        result.b = oldColor.b * (1 - newColor.a) + newColor.b * newColor.a;
         
-        return c;
+        return result;
     }
 
     void compositing(double[] viewMatrix) {
@@ -404,50 +402,52 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
     }
     
-    //presentation week 3, slide 10
-    TFColor applyShading(VoxelGradient voxelGradient, TFColor tempColor , double[] viewVec){
-
-        TFColor c = tempColor; 
+    TFColor applyShading(VoxelGradient voxelGradient, TFColor surfaceColor , double[] viewVec){ 
+        TFColor result = new TFColor();
         
-        double AMB_COEFFICIENT = 0.1;
-        double DIFF_COEFFICIENT = 0.7;
-        double SPEC_COEFFICIENT = 0.2;
-        double ALPHA = 10.0;
+        double k_amb = 0.1;
+        double k_diff = 0.7;
+        double k_spec = 0.2;
+        double alpha = 10.0;
         
-        double[] halfwayVec = new double[3];
+        double[] white = {255,255,255};
+        
+        //Assume L=V --> Halfway vector is 1
+        double[] halfwayVec = {1,1,1};
+        
         double[] voxelGrad = {(double) voxelGradient.x, (double) voxelGradient.y, (double) voxelGradient.z};
-        VectorMath.normalize(voxelGrad);
-
-        VectorMath.setVector(halfwayVec, viewVec[0], viewVec[1], viewVec[2]);
-
-        VectorMath.scale(halfwayVec, 2);
-
-        VectorMath.scale(halfwayVec, 1 / VectorMath.length(halfwayVec));
-
+        
         double dotProduct1 = VectorMath.dotproduct(viewVec, voxelGrad);
         double dotProduct2 = VectorMath.dotproduct(voxelGrad, halfwayVec);
 
-
         //formula only applies when the dot products are positive
         if (dotProduct1 >= 0.0 && dotProduct2 >= 0.0) {
-
-	    	/*applies the simplified Phong model to the current Voxel
-	    	 * the coefficients influence the outcome of the shading and can be varied
-	    	 */
-
-            TFColor surfaceColor = this.getTF2DPanel().triangleWidget.color;
-            //make vector
-            double[] surfColVec =  new double[]{surfaceColor.r,surfaceColor.g,surfaceColor.b};
+            //TFColor surfaceColor = this.getTF2DPanel().triangleWidget.color;
+            double[] surfColVec =  {surfaceColor.r,surfaceColor.g,surfaceColor.b};
             
-            VectorMath.scale(surfColVec, AMB_COEFFICIENT + DIFF_COEFFICIENT * dotProduct1);
-            VectorMath.add(surfColVec, SPEC_COEFFICIENT * (Math.pow(dotProduct2, ALPHA)));
-
+            //simplified Phong model 
+            VectorMath.scale(white,k_amb);
+            VectorMath.scale(surfColVec,k_diff*dotProduct1);
+            VectorMath.addVector(surfColVec,white);
+            VectorMath.add(surfColVec, k_spec * (Math.pow(dotProduct2, alpha)));
+           
             //write the obtained new color to the output
-            c.r = surfaceColor.r;
-            c.g = surfaceColor.g;
-            c.b = surfaceColor.b;
+            result.r = surfColVec[0];
+            result.g = surfColVec[1];
+            result.b = surfColVec[2];
         }
-        return c;
+        return result;
+    }
+    
+    public TFColor applyColorAndOverlay(TFColor oldColor, TFColor newColor){
+        TFColor result = new TFColor();
+        result.r = oldColor.r * (1 - newColor.a) + newColor.r * newColor.a;
+        result.g = oldColor.g * (1 - newColor.a) + newColor.g * newColor.a;
+        result.b = oldColor.b * (1 - newColor.a) + newColor.b * newColor.a;
+        //apply levoy's relation (p.32)
+        result.a = 1 - ((1 - oldColor.a) * (1-newColor.a) );
+        
+        return result;
     }
 
     void transfer2D(double[] viewMatrix) {
@@ -468,14 +468,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double[] pixelCoord;
         double[] volumeCenter = new double[3];
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
-
-        // sample on a plane through the origin of the volume data
-        //double max = volume.getMaximum();
         
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
                 TFColor voxelColor = this.getTF2DPanel().triangleWidget.color;
-                TFColor tempColor = this.getTF2DPanel().triangleWidget.color;
+                TFColor tempColor = voxelColor;
                 
                 short val=0;
                 VoxelGradient gradient;
@@ -485,26 +482,27 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 if(this.responsive) {step = 10;}
                 
                 pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
+                
                 voxelColor.a = 0;
+                
                 while(checkPixelInVolume(pixelCoord[0],pixelCoord[1],pixelCoord[2])) {
                     val = (short)tripleLinearInterpolation(pixelCoord);
                     gradient = this.gradients.getGradient((int)pixelCoord[0],(int) pixelCoord[1],(int) pixelCoord[2]);
-                   // TFColor newColor = tFunc.getColor(val);
                     tempColor.a = this.getTF2DPanel().triangleWidget.opacity(val, gradient.mag);
                     
-                    //check if shading is selected
-                    if(shading) {
-                        tempColor = applyShading(gradient, tempColor, viewVec);
+                    if(tempColor.a > 0) {
+                        //check if shading is selected
+                        if(shading) {
+                            tempColor = applyShading(gradient, tempColor, viewVec);
+                        }
+                        //apply color
+                        voxelColor = applyColorAndOverlay(voxelColor, tempColor);
                     }
-                    
-                    //apply color
-                    voxelColor = applyNewColor(voxelColor, tempColor);
                     
                     k += step;
                     pixelCoord = calculatePixelCoordinates(uVec, vVec, viewVec, volumeCenter, imageCenter, i, j, k);
                 }
-                
-                
+       
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
                 int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;

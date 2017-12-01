@@ -46,38 +46,21 @@ public class VectorMath {
         return Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
     }
     
-    //added to scale
-    public static void scale(double[] vector, double factor){
+    //added to multiply a value to all vector's elements
+    public static void scale(double[] vector, double value){
         for(int i = 0; i < vector.length; ++i)
-            vector[i] *= factor;
+            vector[i] *= value;
     }
     
-    //find the most extreme value in the vector
-    public static double extreme(double[] vector) {
-
-        double extreme = 0; // The extreme value so far, including sign
-        double absExtreme = 0; // The extreme value so far as a positive number
-
-        double absCur; // The absolute value of the current value;
-
-        for(double value : vector){
-            absCur = Math.abs(value);
-            if(absCur > absExtreme) {
-                absExtreme = absCur;
-                extreme = value;
-            }
-        }
-
-        return extreme;
-    }
-    
-    //added to normalize
-    public static void normalize(double[] vector){
-        scale(vector, 1/Math.abs(extreme(vector)));
-    }
-    
+    //added to add a value to all vector's elements
     public static void add(double[] u, double v){
         for(int i = 0 ; i < u.length; ++i)
             u[i] += v;
+    }
+    
+    //added to add 2 vectors
+    public static void addVector(double[] u, double []v){
+        for(int i = 0 ; i < u.length; ++i)
+            u[i] += v[i];
     }
 }

@@ -345,8 +345,12 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
             this.color = new TFColor(0.0, 204.0/255.0, 153.0/255.0, 0.3);
         }
         
-        //TODO implement computation of opactity
-        //apply levoy's relation (p.32)
+        //compute opactity
+        //applying levoy's relation (p.32)
+        //f(xi) = intensity
+        //|▼f(xi)| = gradient
+        //fv = this.baseIntensity
+        //r = this.radius
         public double opacity(short intensity, float gradient) {
             if(gradient == 0 && intensity == this.baseIntensity) {
                 return 1;
