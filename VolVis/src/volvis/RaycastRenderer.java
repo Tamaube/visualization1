@@ -376,41 +376,39 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
     }
     
-    TFColor applyShading(VoxelGradient voxelGradient, TFColor surfaceColor , double[] viewVec){ 
-        TFColor result = new TFColor();
-        
+    void applyShading(VoxelGradient voxelGradient, TFColor output, double[] viewVec){ 
         double k_amb = 0.1;
         double k_diff = 0.7;
         double k_spec = 0.2;
         double alpha = 10.0;
         
-        double[] white = {255,255,255};
-        
-        //Assume L=V --> Halfway vector is 1
-        double[] halfwayVec = {1,1,1};
-        
+        double[] halfwayVec = new double[3];
         double[] voxelGrad = {(double) voxelGradient.x, (double) voxelGradient.y, (double) voxelGradient.z};
+        //double[] halfwayVec = {1.0,1.0,1.0};
         
+        VectorMath.normalize(voxelGrad);
+
+        //why?
+        VectorMath.setVector(halfwayVec, viewVec[0],viewVec[1],viewVec[2]);
+        VectorMath.scale(halfwayVec, 2);
+        VectorMath.scale(halfwayVec, 1/VectorMath.length(halfwayVec));
+
         double dotProduct1 = VectorMath.dotproduct(viewVec, voxelGrad);
         double dotProduct2 = VectorMath.dotproduct(voxelGrad, halfwayVec);
 
+
         //formula only applies when the dot products are positive
         if (dotProduct1 >= 0.0 && dotProduct2 >= 0.0) {
-            //TFColor surfaceColor = this.getTF2DPanel().triangleWidget.color;
-            double[] surfColVec =  {surfaceColor.r,surfaceColor.g,surfaceColor.b};
-            
-            //simplified Phong model 
-            VectorMath.scale(white,k_amb);
-            VectorMath.scale(surfColVec,k_diff*dotProduct1);
-            VectorMath.addVector(surfColVec,white);
-            VectorMath.add(surfColVec, k_spec * (Math.pow(dotProduct2, alpha)));
-           
+
+            double[] surfaceCol = {this.getTF2DPanel().triangleWidget.color.r,this.getTF2DPanel().triangleWidget.color.g,this.getTF2DPanel().triangleWidget.color.b};
+            VectorMath.scale(surfaceCol, k_amb+k_diff*dotProduct1);
+            VectorMath.add(surfaceCol, k_spec*(Math.pow(dotProduct2,alpha)));
+
             //write the obtained new color to the output
-            result.r = surfColVec[0];
-            result.g = surfColVec[1];
-            result.b = surfColVec[2];
+            output.r = surfaceCol[0];
+            output.r = surfaceCol[1];
+            output.r = surfaceCol[2];
         }
-        return result;
     }
     
     public TFColor applyColorAndOverlay(TFColor oldColor, TFColor newColor){
@@ -418,6 +416,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         result.r = oldColor.r * (1 - newColor.a) + newColor.r * newColor.a;
         result.g = oldColor.g * (1 - newColor.a) + newColor.g * newColor.a;
         result.b = oldColor.b * (1 - newColor.a) + newColor.b * newColor.a;
+        
         //apply levoy's relation (p.32)
         result.a = 1 - ((1 - oldColor.a) * (1-newColor.a) );
         
@@ -446,7 +445,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
                 TFColor voxelColor = this.getTF2DPanel().triangleWidget.color;
-                TFColor tempColor = voxelColor;
+                TFColor tempColor = this.getTF2DPanel().triangleWidget.color;//voxelColor;
                 
                 short val=0;
                 VoxelGradient gradient;
@@ -467,7 +466,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     if(tempColor.a > 0) {
                         //check if shading is selected
                         if(shading) {
-                            tempColor = applyShading(gradient, tempColor, viewVec);
+                            //tempColor = applyShading(gradient, tempColor, viewVec);
+                            applyShading(gradient, tempColor, viewVec);
                         }
                         //apply color
                         voxelColor = applyColorAndOverlay(voxelColor, tempColor);

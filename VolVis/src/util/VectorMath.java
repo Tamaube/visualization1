@@ -41,7 +41,7 @@ public class VectorMath {
         return r;
     }
     
-    // compute length of vector v
+    //compute length of vector v
     public static double length(double[] v) {
         return Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
     }
@@ -62,5 +62,28 @@ public class VectorMath {
     public static void addVector(double[] u, double []v){
         for(int i = 0 ; i < u.length; ++i)
             u[i] += v[i];
+    }
+    
+    //find the most extreme value (positive, or negative
+    public static double extreme(double[] vector) {
+
+        double extreme = 0; 
+        double absoluteExtr = 0; 
+        double absCurrentVal;
+
+        for(double value : vector){
+            absCurrentVal = Math.abs(value);
+            if(absCurrentVal > absoluteExtr) {
+                absoluteExtr = absCurrentVal;
+                extreme = value;
+            }
+        }
+
+        return extreme;
+    }
+     
+    //normalize vector
+    public static void normalize(double[] vector){
+        scale(vector, 1/Math.abs(extreme(vector)));
     }
 }
