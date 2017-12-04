@@ -374,20 +374,20 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         double[] halfwayVec = new double[3];
         double[] voxelGrad = {(double) voxelGradient.x, (double) voxelGradient.y, (double) voxelGradient.z};     
-        
+        double[] Vvec ={viewVec[0], viewVec[1], viewVec[2]}; 
         //V is viewVec normalized
-        VectorMath.scale(viewVec, 1/VectorMath.length(viewVec));
+        VectorMath.scale(Vvec, 1/VectorMath.length(Vvec));
         
         //N is voxel gradients vector normalized
         VectorMath.scale(voxelGrad, 1/VectorMath.length(voxelGrad)); 
         
         //We assume L=V so, H=(2*V)/length(2*V)
-        VectorMath.setVector(halfwayVec, viewVec[0],viewVec[1],viewVec[2]);
+        VectorMath.setVector(halfwayVec, Vvec[0],Vvec[1],Vvec[2]);
         VectorMath.scale(halfwayVec, 2);
         VectorMath.scale(halfwayVec, 1/VectorMath.length(halfwayVec));
 
         //L*N (=V*N, since L is equal to V)
-        double dotProduct1 = VectorMath.dotproduct(viewVec, voxelGrad);
+        double dotProduct1 = VectorMath.dotproduct(Vvec, voxelGrad);
         //N*H
         double dotProduct2 = VectorMath.dotproduct(voxelGrad, halfwayVec);
 
@@ -496,8 +496,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     if(tempColor.a > 0) {                       
                         //check if shading is selected
                         if(shading) {
-                            double[] viewVecCopy = {viewVec[0],viewVec[1],viewVec[2]};
-                            applyShading(gradient, tempColor, viewVecCopy);
+                            //double[] viewVecCopy = {viewVec[0],viewVec[1],viewVec[2]};
+                            applyShading(gradient, tempColor, viewVec);
                         }
                         
                         //apply color
