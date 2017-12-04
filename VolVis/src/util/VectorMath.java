@@ -63,27 +63,4 @@ public class VectorMath {
         for(int i = 0 ; i < u.length; ++i)
             u[i] += v[i];
     }
-    
-    //find the most extreme value (positive, or negative
-    public static double extreme(double[] vector) {
-
-        double extreme = 0; 
-        double absoluteExtr = 0; 
-        double absCurrentVal;
-
-        for(double value : vector){
-            absCurrentVal = Math.abs(value);
-            if(absCurrentVal > absoluteExtr) {
-                absoluteExtr = absCurrentVal;
-                extreme = value;
-            }
-        }
-
-        return extreme;
-    }
-     
-    //normalize vector
-    public static void normalize(double[] vector){
-        scale(vector, 1/Math.abs(extreme(vector)));
-    }
 }
