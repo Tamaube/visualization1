@@ -374,8 +374,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         double[] halfwayVec = new double[3];
         double[] voxelGrad = {(double) voxelGradient.x, (double) voxelGradient.y, (double) voxelGradient.z};     
-        double[] Vvec ={viewVec[0], viewVec[1], viewVec[2]}; 
+         
         //V is viewVec normalized
+        double[] Vvec ={viewVec[0], viewVec[1], viewVec[2]};
         VectorMath.scale(Vvec, 1/VectorMath.length(Vvec));
         
         //N is voxel gradients vector normalized
@@ -496,7 +497,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     if(tempColor.a > 0) {                       
                         //check if shading is selected
                         if(shading) {
-                            //double[] viewVecCopy = {viewVec[0],viewVec[1],viewVec[2]};
                             applyShading(gradient, tempColor, viewVec);
                         }
                         
