@@ -393,7 +393,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double dotProduct2 = VectorMath.dotproduct(voxelGrad, halfwayVec);
 
         //formula only applies when the dot products are positive
-        if (dotProduct1 >= 0.0 && dotProduct2 >= 0.0) {
+        if (dotProduct1>=0.0 && dotProduct2>=0.0) {
             //tried using in the formula light white source, doesn't work, hence it is commented out
             //double[] w = new double[] {255.0,255.0,255.0};
             
@@ -401,7 +401,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             double[] surfaceCol = new double[] {this.getTF2DPanel().triangleWidget.color.r,this.getTF2DPanel().triangleWidget.color.g,this.getTF2DPanel().triangleWidget.color.b};
             
             //apply formula
-            //VectorMath.scale(surfaceCol, k_amb+k_diff*dotProduct1);
             VectorMath.scale(surfaceCol, k_diff*dotProduct1);
             //VectorMath.scale(w, k_amb);
             //VectorMath.addVector(surfaceCol, w);
@@ -430,7 +429,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     //compute opactity
     //apply levoy's relation (p.32)
     //f(xi) = intensity
-    //|▼f(xi)| = gradient
+    //|f(xi)| = gradient
     //fv = baseIntensity
     //r = radius
     public double computeOpacity(short intensity, float gradient) {
