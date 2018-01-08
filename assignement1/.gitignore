@@ -1,0 +1,8 @@
+**/VolVis/dist/
+**/VolVis/build/classes/
+**/VolVis/build/empty/
+**/VolVis/build/generated-sources/
+**/VolVis/build/generated-sources/
+**/VolVis/build/built-jar.properties
+**/VolVis/nbproject/
+private.xml 
